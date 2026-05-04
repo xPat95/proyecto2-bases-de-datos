@@ -17,7 +17,7 @@ Aplicacion web simple para el Proyecto 2 de Bases de Datos 1. Permite administra
 
 ## Levantar desde cero
 
-1. Revisar que exista el archivo `.env`. Ya se incluye uno para desarrollo local con estas credenciales:
+1. Crear el archivo `.env` copiando o renombrando `.env.example`. Para desarrollo local se pueden usar estas credenciales:
 
 ```env
 POSTGRES_USER=proy2
