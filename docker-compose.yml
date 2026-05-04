@@ -1,0 +1,44 @@
+services:
+  db:
+    image: postgres:16
+    container_name: proyecto2_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/ddl_proyecto2.sql:/docker-entrypoint-initdb.d/01_ddl.sql
+      - ./database/inserts_p2.sql:/docker-entrypoint-initdb.d/02_inserts.sql
+      - ./database/index_p2.sql:/docker-entrypoint-initdb.d/03_indexes.sql
+
+  backend:
+    build: ./backend
+    container_name: proyecto2_backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+
+  frontend:
+    build: ./frontend
+    container_name: proyecto2_frontend
+    restart: unless-stopped
+    environment:
+      VITE_API_URL: http://localhost:3000/api
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:

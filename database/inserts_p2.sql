@@ -215,3 +215,26 @@ INSERT INTO detalleVenta (cantidad, precioUnitario, subtotal, idVenta, idProduct
 (2, 50.00, 100.00, 23, 23),
 (1, 45.00, 45.00, 24, 24),
 (2, 48.00, 96.00, 25, 25);
+
+-- Ajuste de precios del proyecto: los precios originales estaban bajos.
+-- Se multiplica x10 una sola vez para productos, ventas historicas y detalles.
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM producto
+        WHERE idProducto = 1
+          AND precioVenta < 200
+    ) THEN
+        UPDATE producto
+        SET precioCompra = precioCompra * 10,
+            precioVenta = precioVenta * 10;
+
+        UPDATE detalleVenta
+        SET precioUnitario = precioUnitario * 10,
+            subtotal = subtotal * 10;
+
+        UPDATE venta
+        SET total = total * 10;
+    END IF;
+END $$;
