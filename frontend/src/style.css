@@ -52,7 +52,12 @@ nav {
 nav a {
   color: #0f766e;
   font-weight: 700;
+  padding: 6px 0;
   text-decoration: none;
+}
+
+nav a.active {
+  border-bottom: 2px solid #0f766e;
 }
 
 .alert {
