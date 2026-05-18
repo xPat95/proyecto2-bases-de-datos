@@ -1,47 +1,73 @@
-# Tienda de Camisolas Españolas
+# Tienda de Camisolas Espanolas
 
-Aplicacion web simple para el Proyecto 2 de Bases de Datos 1. Permite administrar productos y clientes, registrar ventas con una transaccion explicita y consultar reportes SQL visibles desde el frontend.
+Aplicacion web simple para una tienda de camisolas de equipos espanoles. Este repositorio inicio como Proyecto 2 de Bases de Datos 1 y en la branch `proyecto2-web-E-commerce` se continua como proyecto de Tecnologias Web.
+
+La aplicacion permite administrar productos y clientes, registrar ventas con transaccion explicita y consultar reportes SQL desde el frontend. Para la parte web se agregaron rutas reales con React Router, pagina 404, Context API, `useReducer`, validaciones visibles, ESLint y pruebas basicas.
 
 ## Tecnologias usadas
 
 - PostgreSQL 16
 - Node.js, Express, pg, cors y dotenv
 - React con Vite
+- React Router
+- Context API y useReducer
+- ESLint
+- Vitest y Testing Library
 - Docker Compose
-- SQL
+- SQL explicito, sin ORM
 
 ## Requisitos
 
 - Docker
 - Docker Compose
+- Node.js y npm, solo si se quieren correr lint/tests localmente fuera de Docker
 
-## Levantar desde cero
+## Variables de entorno
 
-1. Revisar que exista el archivo `.env`. Ya se incluye uno para desarrollo local con estas credenciales:
+El archivo `.env` no se versiona porque esta en `.gitignore`. Para configurar el proyecto desde cero, copia o renombra `.env.example` como `.env`:
+
+```bash
+cp .env.example .env
+```
+
+En Windows tambien puedes duplicar el archivo manualmente o usar:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Credenciales usadas por defecto:
 
 ```env
 POSTGRES_USER=proy2
 POSTGRES_PASSWORD=secret
 POSTGRES_DB=proyecto2
+DB_USER=proy2
+DB_PASSWORD=secret
 ```
 
-2. Construir y levantar todos los servicios:
+## Levantar el proyecto
+
+Construir y levantar todos los servicios:
 
 ```bash
 docker compose up --build
 ```
 
-3. Abrir la aplicacion:
+Puertos principales:
 
 - Frontend: http://localhost:5173
 - Backend: http://localhost:3000
 - PostgreSQL: localhost:5432
 
-Credenciales de PostgreSQL:
+## Rutas del frontend
 
-- Usuario: `proy2`
-- Contraseña: `secret`
-- Base de datos: `proyecto2`
+- `/`: dashboard con resumen general
+- `/productos`: CRUD de productos
+- `/clientes`: CRUD de clientes
+- `/ventas`: registro de ventas
+- `/reportes`: reportes SQL
+- `*`: pagina 404 para rutas no existentes
 
 ## Scripts SQL
 
@@ -103,9 +129,9 @@ Reportes:
 - `GET /api/reportes/top-productos`
 - `GET /api/reportes/resumen-ventas`
 
-## Funcionalidades implementadas segun rubrica
+## Funcionalidades de Bases de Datos
 
-- Diseño de base de datos relacional con llaves primarias, foraneas y restricciones.
+- Diseno de base de datos relacional con llaves primarias, foraneas y restricciones.
 - CRUD completo de productos y clientes.
 - Consultas SQL con JOIN entre varias tablas.
 - Consultas con subquery usando promedio y `EXISTS`.
@@ -114,6 +140,42 @@ Reportes:
 - Vista SQL `vista_resumen_ventas` consultada desde el backend.
 - Transaccion explicita para registrar ventas y descontar stock.
 - Reportes visibles en el frontend con datos reales.
+
+## Funcionalidades de Tecnologias Web
+
+- Rutas reales con React Router.
+- Navegacion visible entre secciones.
+- Pagina 404 para rutas no existentes.
+- Context API para notificaciones globales.
+- `useReducer` para manejar acciones de exito, error y limpieza de notificaciones.
+- Formularios controlados.
+- Validaciones visibles en productos, clientes y ventas.
+- Errores del backend visibles en pantalla.
+- ESLint configurado.
+- Pruebas basicas con Vitest y Testing Library.
+
+## Lint y pruebas
+
+Instalar dependencias del frontend si se trabaja localmente:
+
+```bash
+cd frontend
+npm install
+```
+
+Desde la carpeta `frontend`:
+
+```bash
+npm run lint
+npm run test
+```
+
+Tambien se pueden ejecutar desde la raiz del repositorio:
+
+```bash
+npm run lint
+npm run test
+```
 
 ## Reiniciar la base de datos
 

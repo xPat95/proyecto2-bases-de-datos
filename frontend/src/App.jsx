@@ -119,7 +119,7 @@ function validarCliente(form) {
   return errors;
 }
 
-function validarVenta(form) {
+export function validarVenta(form) {
   const errors = {};
   if (!form.idCliente) errors.idCliente = 'Debe seleccionar un cliente.';
   if (!form.idEmpleado) errors.idEmpleado = 'Debe seleccionar un empleado.';
@@ -486,7 +486,7 @@ function AppContent() {
   }
 
   return (
-    <BrowserRouter>
+    <BrowserRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
       <main>
         <header className="topbar">
           <div>
