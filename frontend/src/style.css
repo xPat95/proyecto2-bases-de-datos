@@ -77,6 +77,23 @@ nav a.active {
   color: #991b1b;
 }
 
+.form-errors {
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 8px;
+  color: #9a3412;
+  margin: -4px 0 16px;
+  padding: 10px 12px;
+}
+
+.form-errors p {
+  margin: 0;
+}
+
+.form-errors p + p {
+  margin-top: 4px;
+}
+
 .dashboard {
   display: grid;
   grid-template-columns: repeat(4, 1fr);

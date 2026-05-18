@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter, Link, NavLink, Route, Routes } from 'react-router-dom';
+import { AppProvider, useAppContext } from './context/AppContext.jsx';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
@@ -75,6 +76,61 @@ function Tabla({ datos }) {
   );
 }
 
+function FormErrors({ errors }) {
+  const mensajes = Object.values(errors).filter(Boolean);
+  if (!mensajes.length) return null;
+
+  return (
+    <div className="form-errors">
+      {mensajes.map((mensaje) => <p key={mensaje}>{mensaje}</p>)}
+    </div>
+  );
+}
+
+function isValidEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function validarProducto(form) {
+  const errors = {};
+  if (!form.nombre.trim()) errors.nombre = 'El nombre del producto es requerido.';
+  if (!form.descripcion.trim()) errors.descripcion = 'La descripcion del producto es requerida.';
+  if (form.precioCompra === '') errors.precioCompra = 'El precio de compra es requerido.';
+  else if (Number(form.precioCompra) < 0) errors.precioCompra = 'El precio de compra no puede ser negativo.';
+  if (form.precioVenta === '') errors.precioVenta = 'El precio de venta es requerido.';
+  else if (Number(form.precioVenta) < 0) errors.precioVenta = 'El precio de venta no puede ser negativo.';
+  if (form.stock === '') errors.stock = 'El stock es requerido.';
+  else if (Number(form.stock) < 0) errors.stock = 'El stock no puede ser negativo.';
+  if (form.stockMinimo === '') errors.stockMinimo = 'El stock minimo es requerido.';
+  else if (Number(form.stockMinimo) < 0) errors.stockMinimo = 'El stock minimo no puede ser negativo.';
+  if (!form.idCategoria) errors.idCategoria = 'Debe seleccionar una categoria.';
+  if (!form.idProveedor) errors.idProveedor = 'Debe seleccionar un proveedor.';
+  return errors;
+}
+
+function validarCliente(form) {
+  const errors = {};
+  if (!form.nombre.trim()) errors.nombre = 'El nombre del cliente es requerido.';
+  if (!form.apellido.trim()) errors.apellido = 'El apellido del cliente es requerido.';
+  if (!form.telefono.trim()) errors.telefono = 'El telefono del cliente es requerido.';
+  if (!form.correo.trim()) errors.correo = 'El correo del cliente es requerido.';
+  if (form.correo && !isValidEmail(form.correo)) errors.correo = 'El correo debe tener un formato valido.';
+  if (!form.direccion.trim()) errors.direccion = 'La direccion del cliente es requerida.';
+  return errors;
+}
+
+function validarVenta(form) {
+  const errors = {};
+  if (!form.idCliente) errors.idCliente = 'Debe seleccionar un cliente.';
+  if (!form.idEmpleado) errors.idEmpleado = 'Debe seleccionar un empleado.';
+  if (!form.idProducto) errors.idProducto = 'Debe seleccionar un producto.';
+  if (!Number.isInteger(Number(form.cantidad)) || Number(form.cantidad) <= 0) {
+    errors.cantidad = 'La cantidad debe ser un entero mayor a 0.';
+  }
+  if (!form.metodoPago) errors.metodoPago = 'Debe seleccionar un metodo de pago.';
+  return errors;
+}
+
 function DashboardPage({ dashboard }) {
   const totalVendido = Number(dashboard?.totalVendido || 0).toFixed(2);
 
@@ -97,7 +153,8 @@ function ProductosPage({
   setProductoEditando,
   guardarProducto,
   editarProducto,
-  eliminarProducto
+  eliminarProducto,
+  errors
 }) {
   return (
     <section className="section">
@@ -121,6 +178,7 @@ function ProductosPage({
         <button type="submit">{productoEditando ? 'Actualizar producto' : 'Crear producto'}</button>
         {productoEditando && <button type="button" className="secondary" onClick={() => { setProductoEditando(null); setProductoForm(productoVacio); }}>Cancelar</button>}
       </form>
+      <FormErrors errors={errors} />
       <div className="table-wrap">
         <table>
           <thead>
@@ -151,7 +209,8 @@ function ClientesPage({
   setClienteEditando,
   guardarCliente,
   editarCliente,
-  eliminarCliente
+  eliminarCliente,
+  errors
 }) {
   return (
     <section className="section">
@@ -168,6 +227,7 @@ function ClientesPage({
         <button type="submit">{clienteEditando ? 'Actualizar cliente' : 'Crear cliente'}</button>
         {clienteEditando && <button type="button" className="secondary" onClick={() => { setClienteEditando(null); setClienteForm(clienteVacio); }}>Cancelar</button>}
       </form>
+      <FormErrors errors={errors} />
       <div className="table-wrap">
         <table>
           <thead>
@@ -190,7 +250,7 @@ function ClientesPage({
   );
 }
 
-function VentasPage({ clientes, empleados, productos, ventaForm, setVentaForm, registrarVenta }) {
+function VentasPage({ clientes, empleados, productos, ventaForm, setVentaForm, registrarVenta, errors }) {
   return (
     <section className="section">
       <div className="section-title">
@@ -218,6 +278,7 @@ function VentasPage({ clientes, empleados, productos, ventaForm, setVentaForm, r
         </select>
         <button type="submit">Registrar venta</button>
       </form>
+      <FormErrors errors={errors} />
     </section>
   );
 }
@@ -255,7 +316,7 @@ function NotFound() {
   );
 }
 
-export default function App() {
+function AppContent() {
   const [dashboard, setDashboard] = useState(null);
   const [productos, setProductos] = useState([]);
   const [clientes, setClientes] = useState([]);
@@ -265,10 +326,10 @@ export default function App() {
   const [clienteForm, setClienteForm] = useState(clienteVacio);
   const [clienteEditando, setClienteEditando] = useState(null);
   const [ventaForm, setVentaForm] = useState(ventaVacia);
-  const [mensaje, setMensaje] = useState('');
-  const [error, setError] = useState('');
+  const [formErrors, setFormErrors] = useState({ producto: {}, cliente: {}, venta: {} });
   const [reporteActivo, setReporteActivo] = useState(reportes[0]);
   const [datosReporte, setDatosReporte] = useState([]);
+  const { notification, clearNotification, showError, showSuccess } = useAppContext();
 
   async function cargarTodo() {
     const [dash, prods, clis, prodOpc, ventaOpc] = await Promise.all([
@@ -295,12 +356,11 @@ export default function App() {
   }
 
   async function ejecutar(accion) {
-    setMensaje('');
-    setError('');
+    clearNotification();
     try {
       await accion();
     } catch (err) {
-      setError(err.message);
+      showError(err.message);
     }
   }
 
@@ -318,6 +378,10 @@ export default function App() {
   async function guardarProducto(event) {
     event.preventDefault();
     await ejecutar(async () => {
+      const errors = validarProducto(productoForm);
+      setFormErrors((actual) => ({ ...actual, producto: errors }));
+      if (Object.keys(errors).length) return;
+
       const metodo = productoEditando ? 'PUT' : 'POST';
       const ruta = productoEditando ? `/productos/${productoEditando}` : '/productos';
       const payload = {
@@ -330,9 +394,10 @@ export default function App() {
         idProveedor: Number(productoForm.idProveedor)
       };
       await api(ruta, { method: metodo, body: JSON.stringify(payload) });
-      setMensaje(productoEditando ? 'Producto actualizado.' : 'Producto creado.');
+      showSuccess(productoEditando ? 'Producto actualizado.' : 'Producto creado.');
       setProductoForm(productoVacio);
       setProductoEditando(null);
+      setFormErrors((actual) => ({ ...actual, producto: {} }));
       await cargarTodo();
     });
   }
@@ -340,7 +405,7 @@ export default function App() {
   async function eliminarProducto(id) {
     await ejecutar(async () => {
       await api(`/productos/${id}`, { method: 'DELETE' });
-      setMensaje('Producto eliminado.');
+      showSuccess('Producto eliminado.');
       await cargarTodo();
     });
   }
@@ -362,12 +427,17 @@ export default function App() {
   async function guardarCliente(event) {
     event.preventDefault();
     await ejecutar(async () => {
+      const errors = validarCliente(clienteForm);
+      setFormErrors((actual) => ({ ...actual, cliente: errors }));
+      if (Object.keys(errors).length) return;
+
       const metodo = clienteEditando ? 'PUT' : 'POST';
       const ruta = clienteEditando ? `/clientes/${clienteEditando}` : '/clientes';
       await api(ruta, { method: metodo, body: JSON.stringify(clienteForm) });
-      setMensaje(clienteEditando ? 'Cliente actualizado.' : 'Cliente creado.');
+      showSuccess(clienteEditando ? 'Cliente actualizado.' : 'Cliente creado.');
       setClienteForm(clienteVacio);
       setClienteEditando(null);
+      setFormErrors((actual) => ({ ...actual, cliente: {} }));
       await cargarTodo();
     });
   }
@@ -375,7 +445,7 @@ export default function App() {
   async function eliminarCliente(id) {
     await ejecutar(async () => {
       await api(`/clientes/${id}`, { method: 'DELETE' });
-      setMensaje('Cliente eliminado.');
+      showSuccess('Cliente eliminado.');
       await cargarTodo();
     });
   }
@@ -394,6 +464,10 @@ export default function App() {
   async function registrarVenta(event) {
     event.preventDefault();
     await ejecutar(async () => {
+      const errors = validarVenta(ventaForm);
+      setFormErrors((actual) => ({ ...actual, venta: errors }));
+      if (Object.keys(errors).length) return;
+
       await api('/ventas', {
         method: 'POST',
         body: JSON.stringify({
@@ -404,8 +478,9 @@ export default function App() {
           cantidad: Number(ventaForm.cantidad)
         })
       });
-      setMensaje('Venta registrada con transaccion.');
+      showSuccess('Venta registrada con transaccion.');
       setVentaForm(ventaVacia);
+      setFormErrors((actual) => ({ ...actual, venta: {} }));
       await cargarTodo();
     });
   }
@@ -427,8 +502,7 @@ export default function App() {
           </nav>
         </header>
 
-        {mensaje && <div className="alert success">{mensaje}</div>}
-        {error && <div className="alert error">{error}</div>}
+        {notification.message && <div className={`alert ${notification.type}`}>{notification.message}</div>}
 
         <Routes>
           <Route path="/" element={<DashboardPage dashboard={dashboard} />} />
@@ -445,6 +519,7 @@ export default function App() {
                 guardarProducto={guardarProducto}
                 editarProducto={editarProducto}
                 eliminarProducto={eliminarProducto}
+                errors={formErrors.producto}
               />
             }
           />
@@ -460,6 +535,7 @@ export default function App() {
                 guardarCliente={guardarCliente}
                 editarCliente={editarCliente}
                 eliminarCliente={eliminarCliente}
+                errors={formErrors.cliente}
               />
             }
           />
@@ -473,6 +549,7 @@ export default function App() {
                 ventaForm={ventaForm}
                 setVentaForm={setVentaForm}
                 registrarVenta={registrarVenta}
+                errors={formErrors.venta}
               />
             }
           />
@@ -490,5 +567,13 @@ export default function App() {
         </Routes>
       </main>
     </BrowserRouter>
+  );
+}
+
+export default function App() {
+  return (
+    <AppProvider>
+      <AppContent />
+    </AppProvider>
   );
 }
