@@ -1,6 +1,6 @@
 # Tienda de Camisolas Espanolas
 
-Aplicacion web simple para una tienda de camisolas de equipos espanoles. Este repositorio inicio como Proyecto 2 de Bases de Datos 1 y en la branch `proyecto2-web-E-commerce` se continua como proyecto de Tecnologias Web.
+Aplicacion web simple para una tienda de camisolas de equipos espanoles. Este repositorio inicio como Proyecto 2 de Bases de Datos 1, se continuo en la branch `proyecto2-web-E-commerce` para Tecnologias Web y ahora se extiende en la branch `proyecto-3`.
 
 La aplicacion permite administrar productos y clientes, registrar ventas con transaccion explicita y consultar reportes SQL desde el frontend. Para la parte web se agregaron rutas reales con React Router, pagina 404, Context API, `useReducer`, validaciones visibles, ESLint y pruebas basicas.
 
@@ -39,10 +39,10 @@ Copy-Item .env.example .env
 Credenciales usadas por defecto:
 
 ```env
-POSTGRES_USER=proy2
+POSTGRES_USER=proy3
 POSTGRES_PASSWORD=secret
 POSTGRES_DB=proyecto2
-DB_USER=proy2
+DB_USER=proy3
 DB_PASSWORD=secret
 ```
 
@@ -76,6 +76,7 @@ Los scripts estan en la carpeta `database/` y se cargan automaticamente cuando s
 - `ddl_proyecto2.sql`: crea las tablas `categoria`, `proveedor`, `producto`, `cliente`, `empleado`, `venta` y `detalleVenta`.
 - `inserts_p2.sql`: inserta datos iniciales de camisolas, clientes, empleados, ventas y detalles.
 - `index_p2.sql`: crea indices y la vista `vista_resumen_ventas`.
+- `04_roles_permisos.sql`: crea roles de PostgreSQL y asigna permisos granulares para Proyecto 3.
 
 Docker Compose los monta en `/docker-entrypoint-initdb.d/` en este orden:
 
@@ -83,7 +84,22 @@ Docker Compose los monta en `/docker-entrypoint-initdb.d/` en este orden:
 01_ddl.sql
 02_inserts.sql
 03_indexes.sql
+04_roles_permisos.sql
 ```
+
+## Proyecto 3: roles y permisos
+
+El Proyecto 3 cambia el usuario de conexion de `proy2` a `proy3`, manteniendo la contrasena `secret`.
+
+El script `database/04_roles_permisos.sql` define exactamente cinco roles de PostgreSQL:
+
+- `administrador`: acceso total sobre tablas y secuencias.
+- `gerente`: lectura general, gestion de productos, clientes y ventas.
+- `vendedor`: gestion de clientes y ventas, con permiso para descontar stock.
+- `bodeguero`: gestion de productos, categorias, proveedores y stock.
+- `auditor`: solo lectura para consultas y reportes.
+
+Los permisos se aplican con `REVOKE` sobre permisos publicos y `GRANT` especificos por rol.
 
 ## Endpoints principales
 
