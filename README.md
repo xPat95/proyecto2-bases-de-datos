@@ -1,8 +1,8 @@
 # Tienda de Camisolas Espanolas
 
-Aplicacion web simple para una tienda de camisolas de equipos espanoles. Este repositorio inicio como Proyecto 2 de Bases de Datos 1, se continuo en la branch `proyecto2-web-E-commerce` para Tecnologias Web y ahora se extiende en la branch `proyecto-3`.
+Aplicacion web simple para una tienda de camisolas de equipos espanoles. Este repositorio inicio como Proyecto 2 de Bases de Datos 1, se continuo en la branch `proyecto2-web-E-commerce` para Tecnologias Web y ahora se extiende en la branch `proyecto-3` para Proyecto 3.
 
-La aplicacion permite administrar productos y clientes, registrar ventas con transaccion explicita y consultar reportes SQL desde el frontend. Para la parte web se agregaron rutas reales con React Router, pagina 404, Context API, `useReducer`, validaciones visibles, ESLint y pruebas basicas.
+La aplicacion mantiene lo implementado en Proyecto 2: PostgreSQL con Docker, backend Express, frontend React, CRUD de productos/clientes, ventas, reportes SQL visibles y pruebas basicas. Proyecto 3 agrega roles de base de datos, stored procedures, ORM en operaciones CRUD puntuales y autenticacion simple con proteccion por roles.
 
 ## Tecnologias usadas
 
@@ -48,9 +48,23 @@ FRONTEND_URL=http://localhost:5173
 SESSION_SECRET=proyecto3-secret
 ```
 
-## Levantar el proyecto
+## Levantar el proyecto desde cero
 
-Construir y levantar todos los servicios:
+Desde la raiz del repositorio:
+
+```bash
+cp .env.example .env
+docker compose up --build
+```
+
+En Windows puedes crear el `.env` asi:
+
+```powershell
+Copy-Item .env.example .env
+docker compose up --build
+```
+
+Si ya existe el archivo `.env`, solo construye y levanta los servicios:
 
 ```bash
 docker compose up --build
@@ -70,6 +84,8 @@ Puertos principales:
 - `/ventas`: registro de ventas
 - `/reportes`: reportes SQL
 - `*`: pagina 404 para rutas no existentes
+
+La aplicacion inicia en una pantalla de login. Despues de iniciar sesion, la navegacion cambia segun el rol del usuario.
 
 ## Proyecto 3: autenticacion y roles en la app
 
@@ -91,12 +107,19 @@ Permisos visibles en frontend:
 - `bodeguero`: ve dashboard y productos.
 - `auditor`: ve dashboard y reportes.
 
-El backend tambien protege endpoints con middleware de sesion y roles:
+El backend protege endpoints con middleware de sesion y roles:
 
 - Productos: crear, editar, eliminar y actualizar stock solo para `administrador`, `gerente` y `bodeguero`.
 - Clientes: crear, editar y eliminar solo para `administrador`, `gerente` y `vendedor`.
 - Ventas: registrar ventas solo para `administrador`, `gerente` y `vendedor`.
 - Reportes: consultas de reportes solo para `administrador`, `gerente` y `auditor`.
+
+Para probar vistas protegidas desde el frontend:
+
+1. Inicia sesion como `vendedor`: debe ver dashboard, clientes y ventas.
+2. Inicia sesion como `bodega`: debe ver dashboard y productos.
+3. Inicia sesion como `auditor`: debe ver dashboard y reportes, pero no formularios de modificacion.
+4. Escribe manualmente una ruta no permitida para ese rol, por ejemplo `/productos` con `auditor`; debe mostrar acceso denegado.
 
 ## Scripts SQL
 
@@ -152,6 +175,14 @@ El backend invoca procedures desde endpoints reales:
 - `GET /api/reportes/stock-bajo-procedure`
 - `GET /api/reportes/total-producto-procedure/:id`
 
+Para probarlos desde la app:
+
+- Crear un cliente ejecuta `sp_crear_cliente_validado`.
+- Registrar una venta ejecuta `sp_registrar_venta`.
+- Registrar una venta con `/api/ventas/control-transaccion` ejecuta `sp_registrar_venta_con_control`.
+- Actualizar stock con `PATCH /api/productos/:id/stock` ejecuta `sp_actualizar_stock`.
+- Consultar reportes de stock bajo o total vendido por producto ejecuta los procedures de reportes.
+
 ## Proyecto 3: ORM
 
 Se agrego Sequelize como ORM para operaciones CRUD puntuales sin reemplazar los reportes SQL ni los stored procedures.
@@ -188,18 +219,11 @@ Clientes:
 
 Ventas:
 
+- `GET /api/ventas/opciones`
 - `POST /api/ventas`
 - `POST /api/ventas/control-transaccion`
 
-El registro de ventas usa SQL explicito con:
-
-- `BEGIN`
-- insercion en `venta`
-- insercion en `detalleVenta`
-- actualizacion de stock
-- validacion de stock suficiente
-- `COMMIT`
-- `ROLLBACK` si ocurre un error
+El registro de ventas valida cliente, empleado, producto, cantidad y stock suficiente. El endpoint `POST /api/ventas` invoca `sp_registrar_venta`; el endpoint `POST /api/ventas/control-transaccion` invoca `sp_registrar_venta_con_control`, que contiene control transaccional con `COMMIT` y `ROLLBACK`.
 
 Reportes:
 
@@ -212,6 +236,8 @@ Reportes:
 - `GET /api/reportes/ventas-por-producto`
 - `GET /api/reportes/top-productos`
 - `GET /api/reportes/resumen-ventas`
+- `GET /api/reportes/stock-bajo-procedure`
+- `GET /api/reportes/total-producto-procedure/:id`
 
 ## Funcionalidades de Bases de Datos
 
@@ -224,6 +250,10 @@ Reportes:
 - Vista SQL `vista_resumen_ventas` consultada desde el backend.
 - Transaccion explicita para registrar ventas y descontar stock.
 - Reportes visibles en el frontend con datos reales.
+- Roles de PostgreSQL creados con `CREATE ROLE`.
+- Permisos granulares aplicados con `REVOKE` y `GRANT`.
+- Stored procedures de negocio invocados desde el backend.
+- ORM integrado en operaciones CRUD puntuales.
 
 ## Funcionalidades de Tecnologias Web
 
@@ -263,6 +293,39 @@ Tambien se pueden ejecutar desde la raiz del repositorio:
 npm run lint
 npm run test
 ```
+
+## Verificacion manual de Proyecto 3
+
+Reiniciar la base de datos y levantar todo desde cero:
+
+```bash
+docker compose down -v
+docker compose up --build
+```
+
+Verificar que los contenedores esten arriba:
+
+```bash
+docker compose ps
+```
+
+Probar login y endpoint protegido con PowerShell:
+
+```powershell
+$body = @{ username = 'admin'; password = 'admin123' } | ConvertTo-Json
+Invoke-RestMethod -Uri http://localhost:3000/api/auth/login -Method Post -Body $body -ContentType 'application/json' -SessionVariable sesion
+Invoke-RestMethod -Uri http://localhost:3000/api/reportes/dashboard -WebSession $sesion
+```
+
+Probar que un rol sin permiso reciba `403`:
+
+```powershell
+$body = @{ username = 'auditor'; password = 'auditor123' } | ConvertTo-Json
+Invoke-RestMethod -Uri http://localhost:3000/api/auth/login -Method Post -Body $body -ContentType 'application/json' -SessionVariable sesion
+Invoke-RestMethod -Uri http://localhost:3000/api/productos -Method Post -Body (@{ nombre = 'x' } | ConvertTo-Json) -ContentType 'application/json' -WebSession $sesion
+```
+
+Ese ultimo comando debe fallar porque `auditor` solo tiene permisos de lectura/reportes.
 
 ## Reiniciar la base de datos
 
