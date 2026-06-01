@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { query } from '../db.js';
+import { Producto } from '../orm.js';
 
 const router = Router();
 
@@ -103,24 +104,18 @@ router.post('/', async (req, res, next) => {
     const error = validarProducto(req.body);
     if (error) return res.status(400).json({ mensaje: error });
 
-    const result = await query(`
-      INSERT INTO producto (nombre, descripcion, precioCompra, precioVenta, stock, stockMinimo, idCategoria, idProveedor)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-      RETURNING idProducto AS "idProducto", nombre, descripcion, precioCompra AS "precioCompra",
-        precioVenta AS "precioVenta", stock, stockMinimo AS "stockMinimo",
-        idCategoria AS "idCategoria", idProveedor AS "idProveedor"
-    `, [
-      req.body.nombre,
-      req.body.descripcion,
-      req.body.precioCompra,
-      req.body.precioVenta,
-      req.body.stock,
-      req.body.stockMinimo,
-      req.body.idCategoria,
-      req.body.idProveedor
-    ]);
+    const producto = await Producto.create({
+      nombre: req.body.nombre,
+      descripcion: req.body.descripcion,
+      precioCompra: req.body.precioCompra,
+      precioVenta: req.body.precioVenta,
+      stock: req.body.stock,
+      stockMinimo: req.body.stockMinimo,
+      idCategoria: req.body.idCategoria,
+      idProveedor: req.body.idProveedor
+    });
 
-    res.status(201).json({ mensaje: 'Producto creado correctamente', producto: result.rows[0] });
+    res.status(201).json({ mensaje: 'Producto creado correctamente', producto: producto.toJSON() });
   } catch (error) {
     next(error);
   }
@@ -131,34 +126,21 @@ router.put('/:id', async (req, res, next) => {
     const error = validarProducto(req.body);
     if (error) return res.status(400).json({ mensaje: error });
 
-    const result = await query(`
-      UPDATE producto
-      SET nombre = $1,
-          descripcion = $2,
-          precioCompra = $3,
-          precioVenta = $4,
-          stock = $5,
-          stockMinimo = $6,
-          idCategoria = $7,
-          idProveedor = $8
-      WHERE idProducto = $9
-      RETURNING idProducto AS "idProducto", nombre, descripcion, precioCompra AS "precioCompra",
-        precioVenta AS "precioVenta", stock, stockMinimo AS "stockMinimo",
-        idCategoria AS "idCategoria", idProveedor AS "idProveedor"
-    `, [
-      req.body.nombre,
-      req.body.descripcion,
-      req.body.precioCompra,
-      req.body.precioVenta,
-      req.body.stock,
-      req.body.stockMinimo,
-      req.body.idCategoria,
-      req.body.idProveedor,
-      req.params.id
-    ]);
+    const producto = await Producto.findByPk(req.params.id);
+    if (!producto) return res.status(404).json({ mensaje: 'Producto no encontrado' });
 
-    if (result.rowCount === 0) return res.status(404).json({ mensaje: 'Producto no encontrado' });
-    res.json({ mensaje: 'Producto actualizado correctamente', producto: result.rows[0] });
+    await producto.update({
+      nombre: req.body.nombre,
+      descripcion: req.body.descripcion,
+      precioCompra: req.body.precioCompra,
+      precioVenta: req.body.precioVenta,
+      stock: req.body.stock,
+      stockMinimo: req.body.stockMinimo,
+      idCategoria: req.body.idCategoria,
+      idProveedor: req.body.idProveedor
+    });
+
+    res.json({ mensaje: 'Producto actualizado correctamente', producto: producto.toJSON() });
   } catch (error) {
     next(error);
   }

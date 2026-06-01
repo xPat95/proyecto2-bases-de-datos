@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { query } from '../db.js';
+import { Cliente } from '../orm.js';
 
 const router = Router();
 
@@ -67,21 +68,20 @@ router.put('/:id', async (req, res, next) => {
     const error = validarCliente(req.body);
     if (error) return res.status(400).json({ mensaje: error });
 
-    const result = await query(`
-      UPDATE cliente
-      SET nombre = $1,
-          apellido = $2,
-          telefono = $3,
-          correo = $4,
-          direccion = $5
-      WHERE idCliente = $6
-      RETURNING idCliente AS "idCliente", nombre, apellido, telefono, correo, direccion, fechaRegistro AS "fechaRegistro"
-    `, [req.body.nombre, req.body.apellido, req.body.telefono, req.body.correo, req.body.direccion, req.params.id]);
+    const cliente = await Cliente.findByPk(req.params.id);
+    if (!cliente) return res.status(404).json({ mensaje: 'Cliente no encontrado' });
 
-    if (result.rowCount === 0) return res.status(404).json({ mensaje: 'Cliente no encontrado' });
-    res.json({ mensaje: 'Cliente actualizado correctamente', cliente: result.rows[0] });
+    await cliente.update({
+      nombre: req.body.nombre,
+      apellido: req.body.apellido,
+      telefono: req.body.telefono,
+      correo: req.body.correo,
+      direccion: req.body.direccion
+    });
+
+    res.json({ mensaje: 'Cliente actualizado correctamente', cliente: cliente.toJSON() });
   } catch (error) {
-    if (error.code === '23505') return res.status(409).json({ mensaje: 'Ya existe un cliente con ese correo' });
+    if (error.code === '23505' || error.name === 'SequelizeUniqueConstraintError') return res.status(409).json({ mensaje: 'Ya existe un cliente con ese correo' });
     next(error);
   }
 });

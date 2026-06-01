@@ -123,6 +123,16 @@ El backend invoca procedures desde endpoints reales:
 - `GET /api/reportes/stock-bajo-procedure`
 - `GET /api/reportes/total-producto-procedure/:id`
 
+## Proyecto 3: ORM
+
+Se agrego Sequelize como ORM para operaciones CRUD puntuales sin reemplazar los reportes SQL ni los stored procedures.
+
+Operaciones que usan ORM:
+
+- `POST /api/productos`: crea productos con el modelo `Producto`.
+- `PUT /api/productos/:id`: actualiza productos con el modelo `Producto`.
+- `PUT /api/clientes/:id`: actualiza clientes con el modelo `Cliente`.
+
 ## Endpoints principales
 
 Productos:
