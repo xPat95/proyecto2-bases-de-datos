@@ -39,7 +39,9 @@ const reportes = [
   ['clientes-con-compras', 'Clientes con compras'],
   ['ventas-por-producto', 'Ventas por producto'],
   ['top-productos', 'Top productos con CTE'],
-  ['resumen-ventas', 'Resumen desde VIEW']
+  ['resumen-ventas', 'Resumen desde VIEW'],
+  ['stock-bajo-procedure', 'Stock bajo con procedure'],
+  ['total-producto-procedure', 'Total vendido por producto']
 ];
 
 const rutasPorRol = {
@@ -305,12 +307,19 @@ function VentasPage({ clientes, empleados, productos, ventaForm, setVentaForm, r
   );
 }
 
-function ReportesPage({ reporteActivo, setReporteActivo, datosReporte }) {
+function ReportesPage({
+  reporteActivo,
+  setReporteActivo,
+  datosReporte,
+  productos,
+  productoProcedureId,
+  setProductoProcedureId
+}) {
   return (
     <section className="section">
       <div className="section-title">
         <h2>Reportes SQL</h2>
-        <p>JOIN, subqueries, GROUP BY, HAVING, CTE y VIEW visibles en la aplicacion.</p>
+        <p>JOIN, subqueries, GROUP BY, HAVING, CTE, VIEW y procedures visibles en la aplicacion.</p>
       </div>
       <div className="report-buttons">
         {reportes.map((reporte) => (
@@ -319,6 +328,17 @@ function ReportesPage({ reporteActivo, setReporteActivo, datosReporte }) {
           </button>
         ))}
       </div>
+      {reporteActivo[0] === 'total-producto-procedure' && (
+        <div className="procedure-controls">
+          <select value={productoProcedureId} onChange={(e) => setProductoProcedureId(e.target.value)}>
+            {productos.map((producto) => (
+              <option key={producto.idProducto} value={producto.idProducto}>
+                {producto.idProducto} - {producto.nombre}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
       <h3>{reporteActivo[1]}</h3>
       <Tabla datos={datosReporte} />
     </section>
@@ -411,6 +431,7 @@ function AppContent() {
   const [formErrors, setFormErrors] = useState({ producto: {}, cliente: {}, venta: {} });
   const [reporteActivo, setReporteActivo] = useState(reportes[0]);
   const [datosReporte, setDatosReporte] = useState([]);
+  const [productoProcedureId, setProductoProcedureId] = useState('');
   const { notification, clearNotification, showError, showSuccess } = useAppContext();
 
   async function revisarSesion() {
@@ -475,6 +496,7 @@ function AppContent() {
       idEmpleado: actual.idEmpleado || ventaOpc.empleados[0]?.idEmpleado || '',
       idProducto: actual.idProducto || prods[0]?.idProducto || ''
     }));
+    setProductoProcedureId((actual) => actual || prods[0]?.idProducto || '');
   }
 
   async function ejecutar(accion) {
@@ -496,12 +518,19 @@ function AppContent() {
 
   useEffect(() => {
     if (!puedeVer(usuario, '/reportes')) return;
+    if (reporteActivo[0] === 'total-producto-procedure' && !productoProcedureId) return;
 
     ejecutar(async () => {
+      if (reporteActivo[0] === 'total-producto-procedure') {
+        const data = await api(`/reportes/total-producto-procedure/${productoProcedureId}`);
+        setDatosReporte([data]);
+        return;
+      }
+
       const data = await api(`/reportes/${reporteActivo[0]}`);
-      setDatosReporte(data);
+      setDatosReporte(Array.isArray(data) ? data : [data]);
     });
-  }, [reporteActivo, usuario]);
+  }, [reporteActivo, usuario, productoProcedureId]);
 
   async function guardarProducto(event) {
     event.preventDefault();
@@ -711,6 +740,9 @@ function AppContent() {
                 reporteActivo={reporteActivo}
                 setReporteActivo={setReporteActivo}
                 datosReporte={datosReporte}
+                productos={productos}
+                productoProcedureId={productoProcedureId}
+                setProductoProcedureId={setProductoProcedureId}
               />
               </ProtectedRoute>
             }

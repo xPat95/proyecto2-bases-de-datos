@@ -269,6 +269,15 @@ th {
   color: #ffffff;
 }
 
+.procedure-controls {
+  margin: -4px 0 14px;
+  max-width: 360px;
+}
+
+.procedure-controls select {
+  width: 100%;
+}
+
 .not-found {
   align-items: center;
   display: flex;
