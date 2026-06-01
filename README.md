@@ -77,6 +77,7 @@ Los scripts estan en la carpeta `database/` y se cargan automaticamente cuando s
 - `inserts_p2.sql`: inserta datos iniciales de camisolas, clientes, empleados, ventas y detalles.
 - `index_p2.sql`: crea indices y la vista `vista_resumen_ventas`.
 - `04_roles_permisos.sql`: crea roles de PostgreSQL y asigna permisos granulares para Proyecto 3.
+- `05_stored_procedures.sql`: crea stored procedures de negocio para ventas, stock, clientes y reportes.
 
 Docker Compose los monta en `/docker-entrypoint-initdb.d/` en este orden:
 
@@ -85,6 +86,7 @@ Docker Compose los monta en `/docker-entrypoint-initdb.d/` en este orden:
 02_inserts.sql
 03_indexes.sql
 04_roles_permisos.sql
+05_stored_procedures.sql
 ```
 
 ## Proyecto 3: roles y permisos
@@ -100,6 +102,26 @@ El script `database/04_roles_permisos.sql` define exactamente cinco roles de Pos
 - `auditor`: solo lectura para consultas y reportes.
 
 Los permisos se aplican con `REVOKE` sobre permisos publicos y `GRANT` especificos por rol.
+
+## Proyecto 3: stored procedures
+
+El script `database/05_stored_procedures.sql` agrega procedures relacionados con operaciones reales del negocio:
+
+- `sp_registrar_venta`: registra venta, detalle y descuenta stock.
+- `sp_actualizar_stock`: actualiza stock con parametros de entrada/salida y manejo de excepciones.
+- `sp_consultar_stock_bajo`: consulta productos con stock bajo usando cursor.
+- `sp_total_vendido_producto`: calcula cantidad e ingresos vendidos por producto.
+- `sp_crear_cliente_validado`: crea cliente con validaciones y manejo de excepciones.
+- `sp_registrar_venta_con_control`: procedure de control transaccional con `COMMIT` y `ROLLBACK`.
+
+El backend invoca procedures desde endpoints reales:
+
+- `POST /api/ventas`
+- `POST /api/ventas/control-transaccion`
+- `POST /api/clientes`
+- `PATCH /api/productos/:id/stock`
+- `GET /api/reportes/stock-bajo-procedure`
+- `GET /api/reportes/total-producto-procedure/:id`
 
 ## Endpoints principales
 

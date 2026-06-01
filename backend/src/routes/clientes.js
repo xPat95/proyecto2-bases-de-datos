@@ -45,14 +45,19 @@ router.post('/', async (req, res, next) => {
     if (error) return res.status(400).json({ mensaje: error });
 
     const result = await query(`
-      INSERT INTO cliente (nombre, apellido, telefono, correo, direccion, fechaRegistro)
-      VALUES ($1, $2, $3, $4, $5, CURRENT_DATE)
-      RETURNING idCliente AS "idCliente", nombre, apellido, telefono, correo, direccion, fechaRegistro AS "fechaRegistro"
+      CALL sp_crear_cliente_validado($1, $2, $3, $4, $5, NULL, NULL)
     `, [req.body.nombre, req.body.apellido, req.body.telefono, req.body.correo, req.body.direccion]);
 
-    res.status(201).json({ mensaje: 'Cliente creado correctamente', cliente: result.rows[0] });
+    const cliente = await query(`
+      SELECT idCliente AS "idCliente", nombre, apellido, telefono, correo, direccion, fechaRegistro AS "fechaRegistro"
+      FROM cliente
+      WHERE idCliente = $1
+    `, [result.rows[0].p_id_cliente]);
+
+    res.status(201).json({ mensaje: result.rows[0].p_mensaje, cliente: cliente.rows[0] });
   } catch (error) {
-    if (error.code === '23505') return res.status(409).json({ mensaje: 'Ya existe un cliente con ese correo' });
+    if (error.code === '23505' || error.message.includes('Ya existe')) return res.status(409).json({ mensaje: 'Ya existe un cliente con ese correo' });
+    if (error.message.includes('requerido') || error.message.includes('correo')) return res.status(400).json({ mensaje: error.message });
     next(error);
   }
 });

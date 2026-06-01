@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { query } from '../db.js';
+import { pool, query } from '../db.js';
 
 const router = Router();
 
@@ -14,6 +14,38 @@ router.get('/dashboard', async (_req, res, next) => {
     `);
     res.json(result.rows[0]);
   } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/stock-bajo-procedure', async (req, res, next) => {
+  const limite = req.query.limite ? Number(req.query.limite) : null;
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+    await client.query('CALL sp_consultar_stock_bajo($1, $2)', [limite, 'stock_bajo_cursor']);
+    const result = await client.query('FETCH ALL FROM stock_bajo_cursor');
+    await client.query('COMMIT');
+    res.json(result.rows);
+  } catch (error) {
+    await client.query('ROLLBACK');
+    next(error);
+  } finally {
+    client.release();
+  }
+});
+
+router.get('/total-producto-procedure/:id', async (req, res, next) => {
+  try {
+    const result = await query('CALL sp_total_vendido_producto($1, NULL, NULL, NULL)', [req.params.id]);
+    res.json({
+      producto: result.rows[0].p_producto,
+      cantidadVendida: result.rows[0].p_cantidad_vendida,
+      totalVendido: result.rows[0].p_total_vendido
+    });
+  } catch (error) {
+    if (error.message.includes('Producto no encontrado')) return res.status(404).json({ mensaje: error.message });
     next(error);
   }
 });

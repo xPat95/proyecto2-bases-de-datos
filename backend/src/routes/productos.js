@@ -54,6 +54,26 @@ router.get('/opciones/categorias-proveedores', async (_req, res, next) => {
   }
 });
 
+router.patch('/:id/stock', async (req, res, next) => {
+  const cambio = Number(req.body.cambio);
+
+  if (!Number.isInteger(cambio)) {
+    return res.status(400).json({ mensaje: 'El cambio de stock debe ser un entero' });
+  }
+
+  try {
+    const result = await query('CALL sp_actualizar_stock($1, $2, NULL, NULL)', [req.params.id, cambio]);
+    res.json({
+      mensaje: result.rows[0].p_mensaje,
+      nuevoStock: result.rows[0].p_nuevo_stock
+    });
+  } catch (error) {
+    if (error.message.includes('Producto no encontrado')) return res.status(404).json({ mensaje: error.message });
+    if (error.message.includes('stock')) return res.status(400).json({ mensaje: error.message });
+    next(error);
+  }
+});
+
 router.get('/:id', async (req, res, next) => {
   try {
     const result = await query(`
