@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { query } from '../db.js';
+import { requireRole } from '../auth.js';
 
 const router = Router();
 
@@ -16,7 +17,7 @@ router.get('/opciones', async (_req, res, next) => {
   }
 });
 
-router.post('/control-transaccion', async (req, res, next) => {
+router.post('/control-transaccion', requireRole('administrador', 'gerente', 'vendedor'), async (req, res, next) => {
   const { idCliente, idEmpleado, idProducto, cantidad, metodoPago } = req.body;
   const cantidadNumerica = Number(cantidad);
 
@@ -45,7 +46,7 @@ router.post('/control-transaccion', async (req, res, next) => {
   }
 });
 
-router.post('/', async (req, res, next) => {
+router.post('/', requireRole('administrador', 'gerente', 'vendedor'), async (req, res, next) => {
   const { idCliente, idEmpleado, idProducto, cantidad, metodoPago } = req.body;
   const cantidadNumerica = Number(cantidad);
 

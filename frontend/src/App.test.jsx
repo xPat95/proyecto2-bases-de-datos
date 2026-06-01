@@ -46,6 +46,12 @@ const empleados = [
   }
 ];
 
+const usuarioAdmin = {
+  username: 'admin',
+  nombre: 'Administrador',
+  rol: 'administrador'
+};
+
 const opcionesProducto = {
   categorias: [{ idCategoria: 1, nombre: 'Camisolas' }],
   proveedores: [{ idProveedor: 1, nombreEmpresa: 'FC Barcelona Store' }]
@@ -61,6 +67,9 @@ function jsonResponse(data, ok = true) {
 function mockFetch() {
   vi.stubGlobal('fetch', vi.fn((url, options = {}) => {
     const path = new URL(url).pathname.replace('/api', '');
+
+    if (path === '/auth/me') return jsonResponse({ usuario: usuarioAdmin });
+    if (path === '/auth/login') return jsonResponse({ usuario: usuarioAdmin });
 
     if (options.method === 'POST') {
       return jsonResponse({ mensaje: 'ok' });
@@ -91,13 +100,13 @@ describe('App', () => {
     render(<App />);
 
     expect(await screen.findByText('Total vendido')).toBeInTheDocument();
-    expect(screen.getByText('Q 900.00')).toBeInTheDocument();
+    expect(await screen.findByText((_, element) => element.textContent === 'Q 900.00')).toBeInTheDocument();
   });
 
   test('navega a productos con React Router', async () => {
     render(<App />);
 
-    await userEvent.click(screen.getByRole('link', { name: 'Productos' }));
+    await userEvent.click(await screen.findByRole('link', { name: 'Productos' }));
 
     expect(await screen.findByRole('heading', { name: 'Productos' })).toBeInTheDocument();
     expect(screen.getByText('Camisola Barcelona Hombre')).toBeInTheDocument();

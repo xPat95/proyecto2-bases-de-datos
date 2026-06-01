@@ -7,14 +7,14 @@ La aplicacion permite administrar productos y clientes, registrar ventas con tra
 ## Tecnologias usadas
 
 - PostgreSQL 16
-- Node.js, Express, pg, cors y dotenv
+- Node.js, Express, pg, cors, express-session y dotenv
 - React con Vite
 - React Router
 - Context API y useReducer
 - ESLint
 - Vitest y Testing Library
 - Docker Compose
-- SQL explicito, sin ORM
+- SQL explicito para reportes/procedures y Sequelize ORM en operaciones CRUD puntuales
 
 ## Requisitos
 
@@ -44,6 +44,8 @@ POSTGRES_PASSWORD=secret
 POSTGRES_DB=proyecto2
 DB_USER=proy3
 DB_PASSWORD=secret
+FRONTEND_URL=http://localhost:5173
+SESSION_SECRET=proyecto3-secret
 ```
 
 ## Levantar el proyecto
@@ -68,6 +70,33 @@ Puertos principales:
 - `/ventas`: registro de ventas
 - `/reportes`: reportes SQL
 - `*`: pagina 404 para rutas no existentes
+
+## Proyecto 3: autenticacion y roles en la app
+
+Se agrego autenticacion simple con `express-session`. No usa proveedores externos ni seguridad avanzada; son usuarios de prueba para demostrar control de acceso por rol.
+
+Usuarios de prueba:
+
+- `admin` / `admin123`: administrador
+- `gerente` / `gerente123`: gerente
+- `vendedor` / `vendedor123`: vendedor
+- `bodega` / `bodega123`: bodeguero
+- `auditor` / `auditor123`: auditor
+
+Permisos visibles en frontend:
+
+- `administrador`: ve dashboard, productos, clientes, ventas y reportes.
+- `gerente`: ve dashboard, productos, clientes, ventas y reportes.
+- `vendedor`: ve dashboard, clientes y ventas.
+- `bodeguero`: ve dashboard y productos.
+- `auditor`: ve dashboard y reportes.
+
+El backend tambien protege endpoints con middleware de sesion y roles:
+
+- Productos: crear, editar, eliminar y actualizar stock solo para `administrador`, `gerente` y `bodeguero`.
+- Clientes: crear, editar y eliminar solo para `administrador`, `gerente` y `vendedor`.
+- Ventas: registrar ventas solo para `administrador`, `gerente` y `vendedor`.
+- Reportes: consultas de reportes solo para `administrador`, `gerente` y `auditor`.
 
 ## Scripts SQL
 
@@ -135,6 +164,12 @@ Operaciones que usan ORM:
 
 ## Endpoints principales
 
+Autenticacion:
+
+- `POST /api/auth/login`
+- `POST /api/auth/logout`
+- `GET /api/auth/me`
+
 Productos:
 
 - `GET /api/productos`
@@ -154,6 +189,7 @@ Clientes:
 Ventas:
 
 - `POST /api/ventas`
+- `POST /api/ventas/control-transaccion`
 
 El registro de ventas usa SQL explicito con:
 
@@ -199,6 +235,9 @@ Reportes:
 - Formularios controlados.
 - Validaciones visibles en productos, clientes y ventas.
 - Errores del backend visibles en pantalla.
+- Login/logout simple con sesion.
+- Proteccion de vistas por rol.
+- Usuario y rol actual visibles en la interfaz.
 - ESLint configurado.
 - Pruebas basicas con Vitest y Testing Library.
 

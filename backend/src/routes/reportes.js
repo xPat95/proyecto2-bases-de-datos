@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { pool, query } from '../db.js';
+import { requireRole } from '../auth.js';
 
 const router = Router();
 
@@ -17,6 +18,8 @@ router.get('/dashboard', async (_req, res, next) => {
     next(error);
   }
 });
+
+router.use(requireRole('administrador', 'gerente', 'auditor'));
 
 router.get('/stock-bajo-procedure', async (req, res, next) => {
   const limite = req.query.limite ? Number(req.query.limite) : null;

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { query } from '../db.js';
 import { Cliente } from '../orm.js';
+import { requireRole } from '../auth.js';
 
 const router = Router();
 
@@ -40,7 +41,7 @@ router.get('/:id', async (req, res, next) => {
   }
 });
 
-router.post('/', async (req, res, next) => {
+router.post('/', requireRole('administrador', 'gerente', 'vendedor'), async (req, res, next) => {
   try {
     const error = validarCliente(req.body);
     if (error) return res.status(400).json({ mensaje: error });
@@ -63,7 +64,7 @@ router.post('/', async (req, res, next) => {
   }
 });
 
-router.put('/:id', async (req, res, next) => {
+router.put('/:id', requireRole('administrador', 'gerente', 'vendedor'), async (req, res, next) => {
   try {
     const error = validarCliente(req.body);
     if (error) return res.status(400).json({ mensaje: error });
@@ -86,7 +87,7 @@ router.put('/:id', async (req, res, next) => {
   }
 });
 
-router.delete('/:id', async (req, res, next) => {
+router.delete('/:id', requireRole('administrador', 'gerente', 'vendedor'), async (req, res, next) => {
   try {
     const result = await query('DELETE FROM cliente WHERE idCliente = $1 RETURNING idCliente AS "idCliente"', [req.params.id]);
     if (result.rowCount === 0) return res.status(404).json({ mensaje: 'Cliente no encontrado' });

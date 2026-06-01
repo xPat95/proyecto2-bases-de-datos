@@ -42,9 +42,31 @@ const reportes = [
   ['resumen-ventas', 'Resumen desde VIEW']
 ];
 
+const rutasPorRol = {
+  administrador: ['/', '/productos', '/clientes', '/ventas', '/reportes'],
+  gerente: ['/', '/productos', '/clientes', '/ventas', '/reportes'],
+  vendedor: ['/', '/clientes', '/ventas'],
+  bodeguero: ['/', '/productos'],
+  auditor: ['/', '/reportes']
+};
+
+const credencialesPrueba = [
+  ['admin', 'admin123', 'administrador'],
+  ['gerente', 'gerente123', 'gerente'],
+  ['vendedor', 'vendedor123', 'vendedor'],
+  ['bodega', 'bodega123', 'bodeguero'],
+  ['auditor', 'auditor123', 'auditor']
+];
+
+function puedeVer(usuario, ruta) {
+  if (!usuario) return false;
+  return rutasPorRol[usuario.rol]?.includes(ruta);
+}
+
 async function api(path, options = {}) {
   const response = await fetch(`${API_URL}${path}`, {
     headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
     ...options
   });
   const data = await response.json();
@@ -316,7 +338,67 @@ function NotFound() {
   );
 }
 
+function AccessDenied() {
+  return (
+    <section className="section">
+      <div className="section-title">
+        <h2>Acceso denegado</h2>
+        <p>Tu rol no tiene permisos para ver esta seccion.</p>
+      </div>
+      <Link className="home-link inline-link" to="/">Volver al dashboard</Link>
+    </section>
+  );
+}
+
+function ProtectedRoute({ usuario, ruta, children }) {
+  if (!puedeVer(usuario, ruta)) return <AccessDenied />;
+  return children;
+}
+
+function LoginPage({ form, setForm, iniciarSesion, error }) {
+  return (
+    <div className="login-page">
+      <section className="login-panel">
+        <p className="eyebrow">Proyecto 3 Web</p>
+        <h1>Tienda de camisolas espanolas</h1>
+        <p className="muted">Ingresa con un usuario de prueba para revisar la app segun su rol.</p>
+
+        {error && <div className="alert error">{error}</div>}
+
+        <form onSubmit={iniciarSesion} className="login-form">
+          <input
+            required
+            placeholder="Usuario"
+            value={form.username}
+            onChange={(e) => setForm({ ...form, username: e.target.value })}
+          />
+          <input
+            required
+            type="password"
+            placeholder="Contrasena"
+            value={form.password}
+            onChange={(e) => setForm({ ...form, password: e.target.value })}
+          />
+          <button type="submit">Iniciar sesion</button>
+        </form>
+
+        <div className="test-users">
+          {credencialesPrueba.map(([username, password, rol]) => (
+            <button key={username} type="button" onClick={() => setForm({ username, password })}>
+              {rol}
+            </button>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
 function AppContent() {
+  const [usuario, setUsuario] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [loginForm, setLoginForm] = useState({ username: '', password: '' });
+  const [loginError, setLoginError] = useState('');
   const [dashboard, setDashboard] = useState(null);
   const [productos, setProductos] = useState([]);
   const [clientes, setClientes] = useState([]);
@@ -330,6 +412,46 @@ function AppContent() {
   const [reporteActivo, setReporteActivo] = useState(reportes[0]);
   const [datosReporte, setDatosReporte] = useState([]);
   const { notification, clearNotification, showError, showSuccess } = useAppContext();
+
+  async function revisarSesion() {
+    try {
+      const data = await api('/auth/me');
+      setUsuario(data.usuario);
+    } catch {
+      setUsuario(null);
+    } finally {
+      setAuthLoading(false);
+    }
+  }
+
+  async function iniciarSesion(event) {
+    event.preventDefault();
+    setLoginError('');
+
+    try {
+      const data = await api('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify(loginForm)
+      });
+      setUsuario(data.usuario);
+      setLoginForm({ username: '', password: '' });
+      showSuccess(`Sesion iniciada como ${data.usuario.rol}.`);
+    } catch (err) {
+      setLoginError(err.message);
+    }
+  }
+
+  async function cerrarSesion() {
+    await ejecutar(async () => {
+      await api('/auth/logout', { method: 'POST' });
+      setUsuario(null);
+      setDashboard(null);
+      setProductos([]);
+      setClientes([]);
+      setDatosReporte([]);
+      showSuccess('Sesion cerrada.');
+    });
+  }
 
   async function cargarTodo() {
     const [dash, prods, clis, prodOpc, ventaOpc] = await Promise.all([
@@ -365,15 +487,21 @@ function AppContent() {
   }
 
   useEffect(() => {
-    ejecutar(cargarTodo);
+    revisarSesion();
   }, []);
 
   useEffect(() => {
+    if (usuario) ejecutar(cargarTodo);
+  }, [usuario]);
+
+  useEffect(() => {
+    if (!puedeVer(usuario, '/reportes')) return;
+
     ejecutar(async () => {
       const data = await api(`/reportes/${reporteActivo[0]}`);
       setDatosReporte(data);
     });
-  }, [reporteActivo]);
+  }, [reporteActivo, usuario]);
 
   async function guardarProducto(event) {
     event.preventDefault();
@@ -488,18 +616,34 @@ function AppContent() {
   return (
     <BrowserRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
       <main>
+        {authLoading && <p className="muted">Cargando sesion...</p>}
+        {!authLoading && !usuario && (
+          <LoginPage
+            form={loginForm}
+            setForm={setLoginForm}
+            iniciarSesion={iniciarSesion}
+            error={loginError}
+          />
+        )}
+        {!authLoading && usuario && (
+          <>
         <header className="topbar">
           <div>
-            <p className="eyebrow">Proyecto 2 Bases de Datos</p>
+            <p className="eyebrow">Proyecto 3 Web</p>
             <h1>Tienda de camisolas espanolas</h1>
           </div>
           <nav>
-            <NavLink to="/" end>Dashboard</NavLink>
-            <NavLink to="/productos">Productos</NavLink>
-            <NavLink to="/clientes">Clientes</NavLink>
-            <NavLink to="/ventas">Ventas</NavLink>
-            <NavLink to="/reportes">Reportes</NavLink>
+            {puedeVer(usuario, '/') && <NavLink to="/" end>Dashboard</NavLink>}
+            {puedeVer(usuario, '/productos') && <NavLink to="/productos">Productos</NavLink>}
+            {puedeVer(usuario, '/clientes') && <NavLink to="/clientes">Clientes</NavLink>}
+            {puedeVer(usuario, '/ventas') && <NavLink to="/ventas">Ventas</NavLink>}
+            {puedeVer(usuario, '/reportes') && <NavLink to="/reportes">Reportes</NavLink>}
           </nav>
+          <div className="user-box">
+            <span>{usuario.nombre}</span>
+            <strong>{usuario.rol}</strong>
+            <button type="button" className="secondary" onClick={cerrarSesion}>Salir</button>
+          </div>
         </header>
 
         {notification.message && <div className={`alert ${notification.type}`}>{notification.message}</div>}
@@ -509,6 +653,7 @@ function AppContent() {
           <Route
             path="/productos"
             element={
+              <ProtectedRoute usuario={usuario} ruta="/productos">
               <ProductosPage
                 productos={productos}
                 opciones={opciones}
@@ -521,11 +666,13 @@ function AppContent() {
                 eliminarProducto={eliminarProducto}
                 errors={formErrors.producto}
               />
+              </ProtectedRoute>
             }
           />
           <Route
             path="/clientes"
             element={
+              <ProtectedRoute usuario={usuario} ruta="/clientes">
               <ClientesPage
                 clientes={clientes}
                 clienteForm={clienteForm}
@@ -537,11 +684,13 @@ function AppContent() {
                 eliminarCliente={eliminarCliente}
                 errors={formErrors.cliente}
               />
+              </ProtectedRoute>
             }
           />
           <Route
             path="/ventas"
             element={
+              <ProtectedRoute usuario={usuario} ruta="/ventas">
               <VentasPage
                 clientes={clientes}
                 empleados={opciones.empleados}
@@ -551,20 +700,25 @@ function AppContent() {
                 registrarVenta={registrarVenta}
                 errors={formErrors.venta}
               />
+              </ProtectedRoute>
             }
           />
           <Route
             path="/reportes"
             element={
+              <ProtectedRoute usuario={usuario} ruta="/reportes">
               <ReportesPage
                 reporteActivo={reporteActivo}
                 setReporteActivo={setReporteActivo}
                 datosReporte={datosReporte}
               />
+              </ProtectedRoute>
             }
           />
           <Route path="*" element={<NotFound />} />
         </Routes>
+          </>
+        )}
       </main>
     </BrowserRouter>
   );

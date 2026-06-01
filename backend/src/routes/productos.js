@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { query } from '../db.js';
 import { Producto } from '../orm.js';
+import { requireRole } from '../auth.js';
 
 const router = Router();
 
@@ -55,7 +56,7 @@ router.get('/opciones/categorias-proveedores', async (_req, res, next) => {
   }
 });
 
-router.patch('/:id/stock', async (req, res, next) => {
+router.patch('/:id/stock', requireRole('administrador', 'gerente', 'bodeguero'), async (req, res, next) => {
   const cambio = Number(req.body.cambio);
 
   if (!Number.isInteger(cambio)) {
@@ -99,7 +100,7 @@ router.get('/:id', async (req, res, next) => {
   }
 });
 
-router.post('/', async (req, res, next) => {
+router.post('/', requireRole('administrador', 'gerente', 'bodeguero'), async (req, res, next) => {
   try {
     const error = validarProducto(req.body);
     if (error) return res.status(400).json({ mensaje: error });
@@ -121,7 +122,7 @@ router.post('/', async (req, res, next) => {
   }
 });
 
-router.put('/:id', async (req, res, next) => {
+router.put('/:id', requireRole('administrador', 'gerente', 'bodeguero'), async (req, res, next) => {
   try {
     const error = validarProducto(req.body);
     if (error) return res.status(400).json({ mensaje: error });
@@ -146,7 +147,7 @@ router.put('/:id', async (req, res, next) => {
   }
 });
 
-router.delete('/:id', async (req, res, next) => {
+router.delete('/:id', requireRole('administrador', 'gerente', 'bodeguero'), async (req, res, next) => {
   try {
     const result = await query('DELETE FROM producto WHERE idProducto = $1 RETURNING idProducto AS "idProducto"', [req.params.id]);
     if (result.rowCount === 0) return res.status(404).json({ mensaje: 'Producto no encontrado' });

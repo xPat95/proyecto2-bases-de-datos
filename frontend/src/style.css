@@ -60,6 +60,30 @@ nav a.active {
   border-bottom: 2px solid #0f766e;
 }
 
+.user-box {
+  align-items: flex-end;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 120px;
+}
+
+.user-box span {
+  color: #334155;
+  font-weight: 700;
+}
+
+.user-box strong {
+  color: #64748b;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+}
+
+.user-box button {
+  min-height: 34px;
+  padding: 6px 12px;
+}
+
 .alert {
   border-radius: 8px;
   margin: 12px 0;
@@ -282,11 +306,57 @@ th {
   text-decoration: none;
 }
 
+.inline-link {
+  margin-top: 0;
+}
+
+.login-page {
+  align-items: center;
+  display: flex;
+  min-height: 80vh;
+  padding: 24px 0;
+}
+
+.login-panel {
+  background: #ffffff;
+  border: 1px solid #dde4ec;
+  border-radius: 8px;
+  box-shadow: 0 8px 20px rgba(31, 41, 51, 0.08);
+  margin: 0 auto;
+  max-width: 520px;
+  padding: 28px;
+  width: 100%;
+}
+
+.login-form {
+  display: grid;
+  gap: 10px;
+  margin: 18px 0;
+}
+
+.test-users {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.test-users button {
+  background: #e2e8f0;
+  border-color: #cbd5e1;
+  color: #1e293b;
+  min-height: 34px;
+  padding: 6px 10px;
+}
+
 @media (max-width: 850px) {
   .topbar,
   .section-title {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .user-box {
+    align-items: flex-start;
   }
 
   .dashboard,
